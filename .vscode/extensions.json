@@ -1,0 +1,50 @@
+{
+  "recommendations": [
+    // Python
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.black-formatter",
+    "ms-python.flake8",
+    "ms-python.mypy-type-checker",
+
+    // JavaScript/TypeScript
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+
+    // Docker & Infrastructure
+    "ms-azuretools.vscode-docker",
+    "ms-kubernetes-tools.vscode-kubernetes-tools",
+    "hashicorp.terraform",
+
+    // Azure
+    "ms-azuretools.vscode-azureresourcegroups",
+    "ms-azuretools.vscode-azurefunctions",
+
+    // Git & GitHub
+    "github.copilot",
+    "github.copilot-chat",
+    "github.vscode-pull-request-github",
+    "eamodio.gitlens",
+
+    // Code Quality
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    "gruntfuggly.todo-tree",
+
+    // API Testing
+    "rangav.vscode-thunder-client",
+    "humao.rest-client",
+
+    // Utilities
+    "editorconfig.editorconfig",
+    "mikestead.dotenv",
+    "visualstudioexptteam.vscodeintellicode",
+    "redhat.vscode-yaml",
+    "ms-vscode.makefile-tools",
+
+    // Theme (optional but recommended)
+    "github.github-vscode-theme",
+    "pkief.material-icon-theme"
+  ]
+}

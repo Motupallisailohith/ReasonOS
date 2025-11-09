@@ -1,0 +1,174 @@
+{
+  // Editor settings
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.rulers": [80, 120],
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.trimAutoWhitespace": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n",
+
+  // Python settings
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/bin/python",
+  "python.envFile": "${workspaceFolder}/.env",
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": [
+    "backend/tests"
+  ],
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.linting.mypyEnabled": true,
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": [
+    "--line-length=88"
+  ],
+  "python.sortImports.args": [
+    "--profile=black"
+  ],
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  // JavaScript/TypeScript settings
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "typescript.tsdk": "frontend/node_modules/typescript/lib",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "javascript.preferences.importModuleSpecifier": "relative",
+
+  // JSON/YAML settings
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // Markdown settings
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "on",
+    "files.trimTrailingWhitespace": false
+  },
+
+  // Git settings
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+
+  // Files settings
+  "files.associations": {
+    "*.env.*": "dotenv",
+    "Dockerfile*": "dockerfile",
+    "*.yml": "yaml"
+  },
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/node_modules": true
+  },
+
+  // Search settings
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/__pycache__": true,
+    "**/*.min.js": true
+  },
+
+  // Terminal settings
+  "terminal.integrated.env.windows": {
+    "PYTHONPATH": "${workspaceFolder}/backend"
+  },
+  "terminal.integrated.env.linux": {
+    "PYTHONPATH": "${workspaceFolder}/backend"
+  },
+  "terminal.integrated.env.osx": {
+    "PYTHONPATH": "${workspaceFolder}/backend"
+  },
+
+  // ESLint settings
+  "eslint.workingDirectories": [
+    "./frontend"
+  ],
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+
+  // Prettier settings
+  "prettier.requireConfig": true,
+  "prettier.configPath": "./frontend/.prettierrc",
+
+  // Docker settings
+  "docker.showStartPage": false,
+
+  // Terraform settings
+  "terraform.experimentalFeatures.validateOnSave": true,
+
+  // Error Lens settings
+  "errorLens.enabled": true,
+  "errorLens.delay": 1000,
+
+  // GitLens settings
+  "gitlens.codeLens.enabled": false,
+
+  // Code Spell Checker
+  "cSpell.words": [
+    "reasonos",
+    "fastapi",
+    "uvicorn",
+    "sqlalchemy",
+    "alembic",
+    "pydantic",
+    "pytest",
+    "pylint",
+    "mypy",
+    "venv",
+    "pyproject",
+    "tailwindcss",
+    "zustand"
+  ],
+
+  // Auto-save
+  "files.autoSave": "onFocusChange",
+
+  // Breadcrumbs
+  "breadcrumbs.enabled": true,
+
+  // Minimap
+  "editor.minimap.enabled": true,
+  "editor.minimap.maxColumn": 120
+}

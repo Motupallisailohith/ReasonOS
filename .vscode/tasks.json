@@ -1,0 +1,238 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Development Environment",
+      "type": "shell",
+      "command": "make run",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Backend: Start Server",
+      "type": "shell",
+      "command": "cd backend && source venv/bin/activate && uvicorn app.main:app --reload",
+      "windows": {
+        "command": "cd backend ; .\\venv\\Scripts\\activate ; uvicorn app.main:app --reload"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Application startup complete.*$",
+          "endsPattern": "^.*Application startup complete.*$"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Backend: Run Tests",
+      "type": "shell",
+      "command": "cd backend && pytest tests/ -v",
+      "windows": {
+        "command": "cd backend ; pytest tests/ -v"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Backend: Run Tests with Coverage",
+      "type": "shell",
+      "command": "cd backend && pytest tests/ --cov=app --cov-report=html",
+      "windows": {
+        "command": "cd backend ; pytest tests/ --cov=app --cov-report=html"
+      },
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Backend: Lint",
+      "type": "shell",
+      "command": "cd backend && flake8 app/ && pylint app/ && mypy app/",
+      "windows": {
+        "command": "cd backend ; flake8 app/ ; pylint app/ ; mypy app/"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Backend: Format",
+      "type": "shell",
+      "command": "cd backend && black app/ tests/ && isort app/ tests/",
+      "windows": {
+        "command": "cd backend ; black app/ tests/ ; isort app/ tests/"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Frontend: Start Dev Server",
+      "type": "shell",
+      "command": "cd frontend && npm run dev",
+      "windows": {
+        "command": "cd frontend ; npm run dev"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*VITE.*$",
+          "endsPattern": "^.*Local:.*$"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Frontend: Run Tests",
+      "type": "shell",
+      "command": "cd frontend && npm test",
+      "windows": {
+        "command": "cd frontend ; npm test"
+      },
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Frontend: Lint",
+      "type": "shell",
+      "command": "cd frontend && npm run lint",
+      "windows": {
+        "command": "cd frontend ; npm run lint"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Frontend: Format",
+      "type": "shell",
+      "command": "cd frontend && npm run format",
+      "windows": {
+        "command": "cd frontend ; npm run format"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Docker: Build All",
+      "type": "shell",
+      "command": "docker-compose build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Docker: Start Services",
+      "type": "shell",
+      "command": "docker-compose up -d",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Docker: Stop Services",
+      "type": "shell",
+      "command": "docker-compose down",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Database: Run Migrations",
+      "type": "shell",
+      "command": "cd backend && alembic upgrade head",
+      "windows": {
+        "command": "cd backend ; alembic upgrade head"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Database: Create Migration",
+      "type": "shell",
+      "command": "cd backend && alembic revision --autogenerate -m \"${input:migrationMessage}\"",
+      "windows": {
+        "command": "cd backend ; alembic revision --autogenerate -m \"${input:migrationMessage}\""
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Setup: Install All Dependencies",
+      "type": "shell",
+      "command": "make install",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Quality: Run All Checks",
+      "dependsOn": [
+        "Backend: Lint",
+        "Frontend: Lint"
+      ],
+      "dependsOrder": "parallel",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "migrationMessage",
+      "type": "promptString",
+      "description": "Enter migration message",
+      "default": "New migration"
+    }
+  ]
+}
