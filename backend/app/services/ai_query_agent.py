@@ -11,7 +11,7 @@ import os
 class SemanticQueryAgent:
     """
     AI Agent that uses semantic graph context for better understanding
-    
+
     IMPROVEMENTS:
     1. Passes graph context to AI (not just function names)
     2. Handles generic queries ("remove log files", "fix checkout error")
@@ -70,19 +70,19 @@ class SemanticQueryAgent:
             }
 
     def parse_user_intent_with_context(
-        self, 
-        prompt: str, 
+        self,
+        prompt: str,
         orchestrator  # SemanticGraphOrchestrator with full graph context
     ) -> Dict:
         """
         Parse user intent using FULL semantic graph context
-        
+
         This is the key improvement - we pass the ENTIRE graph context to AI!
-        
+
         Args:
             prompt: User's query
             orchestrator: Orchestrator with graph, indexes, modules
-            
+
         Returns:
             Dict with function_name, action, confidence, reasoning
         """
@@ -91,23 +91,24 @@ class SemanticQueryAgent:
 
         # BUILD RICH CONTEXT FROM SEMANTIC GRAPH
         context = self._build_graph_context(orchestrator)
-        
+
         # Use AI with full context
         return self._parse_with_gemini_enhanced(prompt, context, orchestrator)
 
     def _build_graph_context(self, orchestrator) -> Dict:
         """
         Build rich context from semantic graph
-        
+
         This extracts useful information from the graph that helps AI understand:
         - Module structure (checkout, payment, invoices)
         - Function purposes (from names and locations)
         - Criticality levels
         - Common patterns
+        - FULL DEPENDENCY GRAPH (nodes + edges)
         """
         graph = orchestrator.graph
         analyzer = orchestrator.analyzer
-        
+
         # Group functions by module/directory
         modules = {}
         for node_id, node in graph.nodes.items():
@@ -118,10 +119,10 @@ class SemanticQueryAgent:
                 module = parts[-2]  # Directory name
             else:
                 module = "root"
-            
+
             if module not in modules:
                 modules[module] = []
-            
+
             # Store function with useful info
             modules[module].append({
                 'name': node.name,
@@ -129,7 +130,7 @@ class SemanticQueryAgent:
                 'usages': len(analyzer.indexes.function_called_by.get(node_id, [])),
                 'calls': len(analyzer.indexes.function_calls.get(node_id, []))
             })
-        
+
         # Find high-usage functions (likely important)
         important_functions = []
         for node_id, node in list(graph.nodes.items())[:20]:
@@ -140,12 +141,35 @@ class SemanticQueryAgent:
                     'usages': usage_count,
                     'module': self._extract_module(node.file_path)
                 })
-        
+
+        # Get full graph structure (nodes + edges) for AI to analyze
+        graph_dict = graph.to_dict()
+
+        # Create simplified dependency map for better token efficiency
+        # Format: "function_name -> [list of functions it calls]"
+        dependency_map = {}
+        for edge in graph_dict['edges']:
+            caller = edge['source_id']  # Fixed: was 'from_node'
+            callee = edge['target_id']  # Fixed: was 'to_node'
+            if caller not in dependency_map:
+                dependency_map[caller] = []
+            dependency_map[caller].append(callee)
+
+        # Generate DOT format for AI to visualize structure
+        dot_graph = graph.to_dot(max_nodes=50)  # Limit to 50 nodes for token efficiency
+
         return {
             'modules': modules,
             'important_functions': important_functions,
             'total_functions': len(graph.nodes),
-            'total_files': len(set(n.file_path for n in graph.nodes.values()))
+            'total_files': len(set(n.file_path for n in graph.nodes.values())),
+            'dependency_map': dependency_map,  # Full dependency relationships
+            'dot_graph': dot_graph,  # NEW: Graph in DOT format for visualization
+            'graph_summary': {
+                'total_nodes': len(graph_dict['nodes']),
+                'total_edges': len(graph_dict['edges']),
+                'statistics': graph_dict['statistics']
+            }
         }
 
     def _extract_module(self, file_path: str) -> str:
@@ -156,29 +180,40 @@ class SemanticQueryAgent:
         return "root"
 
     def _parse_with_gemini_enhanced(
-        self, 
-        prompt: str, 
+        self,
+        prompt: str,
         context: Dict,
         orchestrator
     ) -> Dict:
         """
         Use Gemini with FULL graph context
-        
+
         This is much smarter than just passing function names!
         """
-        
+
         # Create rich prompt with graph context
         system_prompt = f"""You are an intelligent code analysis assistant with access to a semantic dependency graph.
 
 === CODEBASE STRUCTURE ===
 Total Functions: {context['total_functions']}
 Total Files: {context['total_files']}
+Total Graph Nodes: {context['graph_summary']['total_nodes']}
+Total Dependencies: {context['graph_summary']['total_edges']}
 
 === MODULES IN CODEBASE ===
 {json.dumps(context['modules'], indent=2)}
 
 === IMPORTANT/FREQUENTLY USED FUNCTIONS ===
 {json.dumps(context['important_functions'], indent=2)}
+
+=== DEPENDENCY GRAPH (function → calls) ===
+{json.dumps(list(context['dependency_map'].items())[:50], indent=2)}
+Note: Showing first 50 dependencies. Full graph available.
+
+=== GRAPH VISUALIZATION (DOT FORMAT) ===
+{context.get('dot_graph', 'Not available')}
+Note: This shows the dependency graph structure visually.
+Use this to understand relationships between functions.
 
 === USER QUERY ===
 "{prompt}"
@@ -224,15 +259,15 @@ Respond ONLY with valid JSON:
         try:
             response = self.model.generate_content(system_prompt)
             result_text = response.text.strip()
-            
+
             # Parse JSON
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
             elif "```" in result_text:
                 result_text = result_text.split("```")[1].split("```")[0].strip()
-            
+
             result = json.loads(result_text)
-            
+
             # If generic query, search graph for matching functions
             if result.get("action") == "find_by_purpose":
                 matching_functions = self._find_functions_by_purpose(
@@ -243,64 +278,64 @@ Respond ONLY with valid JSON:
                 result["matching_functions"] = matching_functions
                 if matching_functions:
                     result["function_name"] = matching_functions[0]  # Pick best match
-            
+
             return result
-            
+
         except Exception as e:
             print(f"⚠️  Enhanced Gemini parsing failed: {e}")
             return self._fallback_with_graph_search(prompt, orchestrator)
 
     def _find_functions_by_purpose(
-        self, 
+        self,
         search_terms: List[str],
         module_filter: Optional[str],
         orchestrator
     ) -> List[str]:
         """
         Search graph for functions matching purpose/keywords
-        
+
         This uses the semantic graph to find relevant functions!
         """
         graph = orchestrator.graph
         matching = []
-        
+
         for node_id, node in graph.nodes.items():
             # Check if any search term in function name
             name_lower = node.name.lower()
             file_lower = node.file_path.lower()
-            
+
             matches = False
             for term in search_terms:
                 term_lower = term.lower()
                 if term_lower in name_lower or term_lower in file_lower:
                     matches = True
                     break
-            
+
             # Filter by module if specified
             if module_filter:
                 if module_filter.lower() not in file_lower:
                     matches = False
-            
+
             if matches:
                 matching.append(node.name)
-        
+
         return matching[:10]  # Return top 10 matches
 
     def _fallback_with_graph_search(self, prompt: str, orchestrator) -> Dict:
         """
         Fallback that still uses graph to search
-        
+
         Even without AI, we can search the graph intelligently!
         """
         prompt_lower = prompt.lower()
         graph = orchestrator.graph
-        
+
         # Extract keywords from prompt
         keywords = []
         for word in prompt_lower.split():
             if len(word) > 3 and word.isalnum():
                 keywords.append(word)
-        
+
         # Search graph for matching functions
         matches = []
         for node_id, node in graph.nodes.items():
@@ -309,7 +344,7 @@ Respond ONLY with valid JSON:
                 if keyword in name_lower:
                     matches.append(node.name)
                     break
-        
+
         # Determine action
         action = "impact"
         if any(w in prompt_lower for w in ["remove", "delete"]):
@@ -320,7 +355,7 @@ Respond ONLY with valid JSON:
             action = "error_trace"
         elif any(w in prompt_lower for w in ["find", "where", "usage"]):
             action = "usages"
-        
+
         return {
             "function_name": matches[0] if matches else None,
             "action": action,

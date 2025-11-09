@@ -125,6 +125,11 @@ async def analyze_repository(request: AnalyzeRequest, background_tasks: Backgrou
         # Cache it
         _orchestrators[repo_path] = orchestrator
 
+        # Debug logging
+        print(f"\n✅ Repository analyzed and cached:")
+        print(f"   Path: {repo_path}")
+        print(f"   Cache now contains: {list(_orchestrators.keys())}")
+
         # Get statistics
         stats = orchestrator.get_statistics()
 
@@ -355,6 +360,49 @@ async def get_statistics(repo_path: str):
     return orchestrator.get_statistics()
 
 
+@router.get("/export/dot")
+async def export_graph_dot(
+    repo_path: str,
+    max_nodes: int = 100,
+    focus_function: Optional[str] = None
+):
+    """
+    Export graph in DOT format for visualization
+
+    DOT format can be:
+    - Visualized with Graphviz tools
+    - Passed to AI models for better understanding
+    - Used by frontend visualization libraries
+
+    Args:
+        repo_path: Path to analyzed repository
+        max_nodes: Maximum nodes to include (default 100)
+        focus_function: Optional function to focus on with its dependencies
+
+    Returns:
+        Plain text DOT format string
+    """
+    if repo_path not in _orchestrators:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Repository not analyzed. Call /graph/analyze first."
+        )
+
+    orchestrator = _orchestrators[repo_path]
+    dot_string = orchestrator.graph.to_dot(max_nodes=max_nodes, focus_function=focus_function)
+
+    return {
+        "format": "dot",
+        "content": dot_string,
+        "metadata": {
+            "max_nodes": max_nodes,
+            "focus_function": focus_function,
+            "total_nodes": len(orchestrator.graph.nodes),
+            "total_edges": len(orchestrator.graph.edges)
+        }
+    }
+
+
 # ============================================================================
 # NATURAL LANGUAGE QUERY ENDPOINT (WITH AI AGENT)
 # ============================================================================
@@ -471,11 +519,17 @@ async def natural_language_query(request: NaturalLanguageQueryRequest):
     try:
         repo_path = request.repo_path
 
+        # Debug logging
+        print(f"\n🔍 Query request received:")
+        print(f"   Repo path: {repo_path}")
+        print(f"   Prompt: {request.prompt}")
+        print(f"   Available orchestrators: {list(_orchestrators.keys())}")
+
         # Get orchestrator
         if repo_path not in _orchestrators:
             raise HTTPException(
                 status_code=404,
-                detail=f"Repository not analyzed. Call /graph/analyze first with repo_path: {repo_path}"
+                detail=f"Repository not analyzed. Call /graph/analyze first with repo_path: {repo_path}. Available: {list(_orchestrators.keys())}"
             )
 
         orchestrator = _orchestrators[repo_path]
@@ -496,11 +550,35 @@ async def natural_language_query(request: NaturalLanguageQueryRequest):
             confidence = 0.6
             reasoning = "Using pattern matching (AI disabled)"
 
-        if not function_name:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Could not identify function name in prompt: '{request.prompt}'. "
-                       f"Try being more specific, e.g., 'What happens if I change calculatePrice?'"
+        # Handle generic queries that don't target a specific function
+        if not function_name or action == "find_by_purpose":
+            # For generic queries, return a summary of the codebase
+            return NaturalLanguageQueryResponse(
+                understood_intent=request.prompt,
+                extracted_function="N/A - Generic Query",
+                extracted_action=action or "general_analysis",
+                confidence=confidence,
+                ai_reasoning=reasoning + " | Generic codebase analysis - no specific function targeted.",
+                analysis_result={
+                    "function_name": "General Analysis",
+                    "summary": {
+                        "total_usages": 0,
+                        "total_files": len(set(n.file_path for n in orchestrator.graph.nodes.values())),
+                        "risk_level": "N/A",
+                        "risk_score": 0
+                    },
+                    "risk_score": {
+                        "risk_level": "N/A",
+                        "risk_score": 0
+                    },
+                    "modules": [],
+                    "business_impact": {
+                        "revenue_impact_range": "N/A",
+                        "affected_users": "N/A",
+                        "estimated_recovery_time": "N/A"
+                    },
+                    "safety_recommendation": f"For specific analysis, please query about a particular function. Try: 'What happens if I change [function_name]?'"
+                }
             )
 
         # Execute the appropriate analysis
@@ -556,6 +634,9 @@ async def natural_language_query(request: NaturalLanguageQueryRequest):
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"\n❌ ERROR in query endpoint:\n{error_details}")
         raise HTTPException(
             status_code=500,
             detail=f"Query failed: {str(e)}"

@@ -151,6 +151,68 @@ class CodeGraph:
             }
         }
 
+    def to_dot(self, max_nodes: int = 100, focus_function: Optional[str] = None) -> str:
+        """
+        Export graph to DOT format for visualization or AI context
+
+        Args:
+            max_nodes: Maximum number of nodes to include
+            focus_function: If provided, show only this function and its dependencies
+
+        Returns:
+            DOT format string that can be:
+            1. Visualized with Graphviz
+            2. Passed to AI models for better understanding
+            3. Used by frontend visualization tools
+        """
+        lines = ["digraph DependencyGraph {"]
+        lines.append("  rankdir=LR;")
+        lines.append("  node [shape=box, style=rounded];")
+        lines.append("")
+
+        # Filter nodes
+        nodes_to_show = []
+        if focus_function:
+            # Show focused function + its direct dependencies
+            for node_id in self.nodes:
+                if focus_function in node_id:
+                    nodes_to_show.append(node_id)
+                    # Add its callers and callees
+                    node = self.nodes[node_id]
+                    nodes_to_show.extend(node.calls[:10])
+                    nodes_to_show.extend(node.called_by[:10])
+            nodes_to_show = list(set(nodes_to_show))[:max_nodes]
+        else:
+            # Show all nodes (limited)
+            nodes_to_show = list(self.nodes.keys())[:max_nodes]
+
+        # Add nodes
+        for node_id in nodes_to_show:
+            if node_id not in self.nodes:
+                continue
+            node = self.nodes[node_id]
+
+            # Color by type
+            color = "lightblue"
+            if node.is_exported:
+                color = "lightgreen"
+            if focus_function and focus_function in node_id:
+                color = "yellow"
+
+            label = f"{node.name}\\n{node.file_path.split('/')[-1]}"
+            lines.append(f'  "{node_id}" [label="{label}", fillcolor="{color}", style="filled"];')
+
+        lines.append("")
+
+        # Add edges
+        for edge in self.edges:
+            if edge.source_id in nodes_to_show and edge.target_id in nodes_to_show:
+                edge_style = "solid" if edge.edge_type == EdgeType.CALLS else "dashed"
+                lines.append(f'  "{edge.source_id}" -> "{edge.target_id}" [style={edge_style}, label="{edge.edge_type.value}"];')
+
+        lines.append("}")
+        return "\n".join(lines)
+
 
 class GraphBuilder:
     """
